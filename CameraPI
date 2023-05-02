@@ -1,0 +1,114 @@
+// Include files for required libraries
+#include <stdio.h>
+
+#include "opencv_aee.hpp"
+#include "main.hpp"     // You can use this file for declaring defined values and functions
+#include "pi2c.h"
+//Pi2c arduino(0x22); // Configure the I2C interface to the Car as a global variable
+
+int iLowH = 0;
+int iLowS = 60;
+int iLowV = 60;
+int iHighH = 25;
+int iHighS = 255;
+int iHighV = 255;
+//red = 0,60,60 - 25,255,255
+//green = 45,60,60 - 80,255,255
+//blue = 81,60,60 - 135,255,255
+//yellow = 27,60,60 - 34,255,255
+//black = 0,0,0 - 179,255,30
+
+void setup(void)
+{
+    setupCamera(320, 240);  // Enable the camera for OpenCV
+}
+
+int main( int argc, char** argv )
+{
+    setup();    // Call a setup function to prepare IO and devices
+    cv::namedWindow("Photo");   // Create a GUI window called photo
+    cv::namedWindow("SigBox");   // Create a GUI window called photo
+    cv::namedWindow("Identity");   // Create a GUI window called photo
+
+    while(1)    // Main loop to perform image processing
+    {
+        Mat frame;
+
+        while(frame.empty())
+            frame = captureFrame(); // Capture a frame from the camera and store in a new matrix variable
+
+        //Create HSV image of original
+        Mat frameHSV;
+        cvtColor(frame,frameHSV,COLOR_BGR2HSV);
+
+        Mat frameThresholded;
+        inRange(frameHSV,Scalar(iLowH,iLowS,iLowV),Scalar(iHighH,iHighS,iHighV),frameThresholded);
+
+        Mat box1 = frameThresholded(Rect(0,0,32,80));
+        Mat box2 = frameThresholded(Rect(33,0,32,80));
+        Mat box3 = frameThresholded(Rect(56,0,32,80));
+        Mat box4 = frameThresholded(Rect(89,0,32,80));
+        Mat box5 = frameThresholded(Rect(122,0,32,80));
+        Mat box6 = frameThresholded(Rect(155,0,32,80));
+        Mat box7 = frameThresholded(Rect(188,0,32,80));
+        Mat box8 = frameThresholded(Rect(221,0,32,80));
+        Mat box9 = frameThresholded(Rect(254,0,32,80));
+        Mat box10 = frameThresholded(Rect(287,0,32,80));
+
+        Mat box11 = frameThresholded(Rect(0,81,32,80));
+        Mat box12 = frameThresholded(Rect(33,81,32,80));
+        Mat box13 = frameThresholded(Rect(56,81,32,80));
+        Mat box14 = frameThresholded(Rect(89,81,32,80));
+        Mat box15 = frameThresholded(Rect(122,81,32,80));
+        Mat box16 = frameThresholded(Rect(155,81,32,80));
+        Mat box17 = frameThresholded(Rect(188,81,32,80));
+        Mat box18 = frameThresholded(Rect(221,81,32,80));
+        Mat box19 = frameThresholded(Rect(254,81,32,80));
+        Mat box20 = frameThresholded(Rect(287,81,32,80));
+
+        Mat box21 = frameThresholded(Rect(0,161,32,79));
+        Mat box22 = frameThresholded(Rect(33,161,32,79));
+        Mat box23 = frameThresholded(Rect(56,161,32,79));
+        Mat box24 = frameThresholded(Rect(89,161,32,79));
+        Mat box25 = frameThresholded(Rect(122,161,32,79));
+        Mat box26 = frameThresholded(Rect(155,161,32,79));
+        Mat box27 = frameThresholded(Rect(188,161,32,79));
+        Mat box28 = frameThresholded(Rect(221,161,32,79));
+        Mat box29 = frameThresholded(Rect(254,161,32,79));
+        Mat box30 = frameThresholded(Rect(287,161,32,78));
+
+        Mat grid[30] = {box1,box2,box3,box4,box5,box6,box7,box8,box9,box10,box11,box12,box13,box14,box15,box16,box17,box18,box19,box20,box21,box22,box23,box24,box25,box26,box27,box28,box29,box30};
+        Mat significantBox;
+
+        //int servoAngles[30] = {};
+
+        int countThree = 0;
+        for (int i = 0;i<29;i++){
+            int countOne = countNonZero(grid[i]);
+            int countTwo = countNonZero(grid[i+1]);
+            if (countOne < countTwo && countTwo > countThree){
+                significantBox = grid[i+1];
+                countThree = countTwo;
+            }
+            else if (countOne >= countTwo && countOne >= countThree) {
+                significantBox = grid[i];
+                countThree = countOne;
+            }
+        }
+        cv::imshow("Photo", frame); //Display the image in the window
+        cv::imshow("SigBox", significantBox); //Display the image in the window
+        cv::imshow("Identity", frameThresholded); //Display the image in the window
+
+        //arduino.i2cWriteArduinoInt(20);
+
+        int key = cv::waitKey(1);   // Wait 1ms for a keypress (required to update windows)
+
+        key = (key==255) ? -1 : key;    // Check if the ESC key has been pressed
+        if (key == 27)
+            break;
+      }
+
+      closeCV();  // Disable the camera and close any windows
+
+      return 0;
+}
